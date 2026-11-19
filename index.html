@@ -46,6 +46,9 @@
         </button>
 
         <div id="hamburger-menu-dropdown" class="hamburger-dropdown hidden" role="menu">
+          <button type="button" id="btn-nav-upload-cor" class="hamburger-item hamburger-item-primary" role="menuitem">
+            Upload COR Photo
+          </button>
           <button type="button" id="btn-nav-templates" class="hamburger-item" role="menuitem">
             Templates
           </button>
@@ -69,58 +72,6 @@
   </header>
 
   <main class="main-layout focused-main-layout">
-    <aside class="sidebar-panel">
-      <section class="card upload-card">
-        <div class="card-header">
-          <h2>1. Upload COR Photo</h2>
-          <span class="badge badge-accent">Class Schedule</span>
-        </div>
-        <p class="helper-text">
-          Upload your Class Schedule. Extracts EDP codes, subjects, rooms, and Mon–Sat times in <strong>PHT (UTC+8)</strong>.
-        </p>
-
-        <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Upload COR image">
-          <input type="file" id="cor-file-input" accept="image/*" hidden />
-          <div id="drop-zone-empty" class="drop-zone-content">
-            <div class="upload-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-            </div>
-            <p class="drop-meta">JPG, PNG, WEBP</p>
-          </div>
-
-          <div id="preview-wrapper" class="preview-wrapper hidden">
-            <img id="cor-preview-img" src="" alt="Uploaded COR Preview" />
-            <button type="button" id="btn-clear-img" class="btn-icon-remove" title="Remove image">&times;</button>
-          </div>
-        </div>
-
-        <div id="ocr-progress-wrap" class="ocr-progress-wrap hidden">
-          <div class="ocr-progress-meta">
-            <span id="ocr-stage-label">Initializing OCR...</span>
-            <span id="ocr-percent-label" class="mono-text">0%</span>
-          </div>
-          <div class="ocr-progress-track">
-            <div id="ocr-progress-fill" class="ocr-progress-fill"></div>
-          </div>
-        </div>
-
-        <div class="upload-actions">
-          <button type="button" id="btn-scan-cor" class="btn btn-primary full-width" disabled>
-            Scan &amp; Build Schedule
-          </button>
-          <button type="button" id="btn-clear-all" class="btn btn-ghost full-width">
-            Clear Schedule Data
-          </button>
-        </div>
-
-        <div id="scan-status" class="scan-status hidden" role="status"></div>
-      </section>
-    </aside>
-
     <section class="workspace-panel">
       <div class="workspace-toolbar">
         <div class="view-tabs" role="tablist">
@@ -348,6 +299,64 @@
     </div>
   </div>
 
+  <div id="upload-cor-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="upload-cor-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="upload-cor-modal-title">1. Upload COR Photo</h3>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.45rem;">
+          <span class="badge badge-accent">Class Schedule</span>
+          <button type="button" id="btn-close-upload-modal" class="btn-close" aria-label="Close upload modal">&times;</button>
+        </div>
+      </div>
+
+      <p class="helper-text">
+        Upload your Class Schedule. Extracts EDP codes, subjects, rooms, and Mon–Sat times in <strong>PHT (UTC+8)</strong>.
+      </p>
+
+      <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Upload COR image">
+        <input type="file" id="cor-file-input" accept="image/*" hidden />
+        <div id="drop-zone-empty" class="drop-zone-content">
+          <div class="upload-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+          </div>
+          <p class="drop-meta">JPG, PNG, WEBP</p>
+        </div>
+
+        <div id="preview-wrapper" class="preview-wrapper hidden">
+          <img id="cor-preview-img" src="" alt="Uploaded COR Preview" />
+          <button type="button" id="btn-clear-img" class="btn-icon-remove" title="Remove image">&times;</button>
+        </div>
+      </div>
+
+      <div id="ocr-progress-wrap" class="ocr-progress-wrap hidden">
+        <div class="ocr-progress-meta">
+          <span id="ocr-stage-label">Initializing OCR...</span>
+          <span id="ocr-percent-label" class="mono-text">0%</span>
+        </div>
+        <div class="ocr-progress-track">
+          <div id="ocr-progress-fill" class="ocr-progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="upload-actions">
+        <button type="button" id="btn-scan-cor" class="btn btn-primary full-width" disabled>
+          Scan &amp; Build Schedule
+        </button>
+        <button type="button" id="btn-clear-all" class="btn btn-ghost full-width">
+          Clear Schedule Data
+        </button>
+      </div>
+
+      <div id="scan-status" class="scan-status hidden" role="status"></div>
+    </div>
+  </div>
+
   <div id="subject-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-card">
       <div class="modal-header">
@@ -458,7 +467,7 @@
       </form>
     </div>
   </div>
-
+  
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
