@@ -368,7 +368,7 @@ body {
 /* Main Workspace */
 .main-layout {
   display: grid;
-  grid-template-columns: 345px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
   padding: 1.25rem 1.5rem 2rem;
   max-width: 1760px;
@@ -1215,7 +1215,7 @@ body[data-template="pastel-paperplane"] .tt-day-header:nth-child(7) { background
 
 @media (max-width: 1120px) {
   .main-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
