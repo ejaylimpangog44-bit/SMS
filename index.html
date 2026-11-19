@@ -35,9 +35,6 @@
         <span id="pht-time" class="mono-text">--:--:-- --</span>
         <span id="pht-date" class="pht-date-text">---</span>
       </div>
-      <button type="button" id="btn-toggle-ocr-inspector" class="btn btn-secondary">
-        OCR Inspector
-      </button>
       <button type="button" id="btn-download-pdf" class="btn btn-primary">
         Download PDF
       </button>
@@ -258,33 +255,6 @@
       </div>
 
       <div id="conflict-banner" class="conflict-banner hidden"></div>
-
-      <section id="ocr-inspector-panel" class="ocr-inspector hidden">
-        <div class="ocr-inspector-header">
-          <div>
-            <h3>Raw Schedule &amp; Extracted Fields Inspector</h3>
-            <p class="ocr-inspector-sub">Displays every field and line captured by the OCR scanner so nothing is hidden.</p>
-          </div>
-          <div class="ocr-inspector-actions">
-            <button type="button" id="btn-copy-raw-ocr" class="btn btn-xs btn-secondary">Copy Raw OCR</button>
-            <button type="button" id="btn-close-ocr-inspector" class="btn btn-xs btn-ghost">Hide</button>
-          </div>
-        </div>
-        <div class="ocr-inspector-grid">
-          <div class="ocr-box">
-            <div class="ocr-box-title">Parsed Header &amp; Metadata</div>
-            <div id="ocr-parsed-meta" class="ocr-meta-list">No OCR scan run yet.</div>
-          </div>
-          <div class="ocr-box">
-            <div class="ocr-box-title">Line-by-Line OCR Extraction Log</div>
-            <div id="ocr-line-log" class="ocr-line-log">Waiting for COR scan...</div>
-          </div>
-          <div class="ocr-box ocr-box-wide">
-            <div class="ocr-box-title">Full Raw OCR Text</div>
-            <pre id="ocr-raw-text" class="ocr-raw-pre">(Empty)</pre>
-          </div>
-        </div>
-      </section>
 
       <div id="view-timetable" class="view-container active">
         <div class="template-sheet">
