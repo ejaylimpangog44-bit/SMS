@@ -1134,9 +1134,43 @@ document.addEventListener("DOMContentLoaded", () => {
   el("btn-scan-cor").addEventListener("click", runCorOcr);
   el("btn-clear-all").addEventListener("click", clearAllData);
 
-  el("btn-nav-templates")?.addEventListener("click", () => openNavDrawer("nav-templates-drawer"));
-  el("btn-nav-tracker")?.addEventListener("click", () => openNavDrawer("nav-tracker-drawer"));
-  el("btn-nav-student")?.addEventListener("click", () => openNavDrawer("nav-student-drawer"));
+  const hamburgerBtn = el("btn-hamburger-menu");
+  const hamburgerMenu = el("hamburger-menu-dropdown");
+
+  function setHamburgerOpen(isOpen) {
+    if (!hamburgerBtn || !hamburgerMenu) return;
+    hamburgerMenu.classList.toggle("hidden", !isOpen);
+    hamburgerBtn.setAttribute("aria-expanded", String(isOpen));
+  }
+
+  hamburgerBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const expanded = hamburgerBtn.getAttribute("aria-expanded") === "true";
+    setHamburgerOpen(!expanded);
+  });
+
+  el("btn-nav-templates")?.addEventListener("click", () => {
+    setHamburgerOpen(false);
+    openNavDrawer("nav-templates-drawer");
+  });
+
+  el("btn-nav-tracker")?.addEventListener("click", () => {
+    setHamburgerOpen(false);
+    openNavDrawer("nav-tracker-drawer");
+  });
+
+  el("btn-nav-student")?.addEventListener("click", () => {
+    setHamburgerOpen(false);
+    openNavDrawer("nav-student-drawer");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (hamburgerMenu && !hamburgerMenu.classList.contains("hidden")) {
+      if (!hamburgerMenu.contains(e.target) && !hamburgerBtn?.contains(e.target)) {
+        setHamburgerOpen(false);
+      }
+    }
+  });
 
   document.querySelectorAll("[data-close-nav]").forEach((btn) => {
     btn.addEventListener("click", () => el(btn.dataset.closeNav)?.classList.add("hidden"));
@@ -1241,6 +1275,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
+      setHamburgerOpen(false);
       [
         "nav-templates-drawer",
         "nav-tracker-drawer",
