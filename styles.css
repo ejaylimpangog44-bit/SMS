@@ -1282,47 +1282,56 @@ body[data-template="pastel-paperplane"] .tt-day-header:nth-child(7) { background
     font-size: 1.45rem;
   }
 
+  .mobile-day-bar {
+    display: none;
+  }
+
   .timetable-wrapper {
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: auto;
   }
 
   .timetable-grid {
     min-width: 0;
     width: 100%;
-    grid-template-columns: 62px minmax(0, 1fr);
+    grid-template-columns: 44px repeat(6, minmax(0, 1fr));
   }
 
-  .mobile-day-bar {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 0.25rem;
-    padding: 0.4rem;
-    background: var(--sheet-surface-2);
-    border-bottom: 1px solid var(--sheet-grid-line);
-  }
-
-  .mobile-day-btn {
-    padding: 0.35rem 0.1rem;
-    font-size: 0.72rem;
-    font-weight: 700;
-    border: 1px solid var(--sheet-border);
-    border-radius: 6px;
-    background: var(--sheet-surface);
-    color: var(--sheet-text);
-    cursor: pointer;
-    font-family: inherit;
-  }
-
-  .mobile-day-btn.active {
-    background: #0ea5e9;
-    color: #ffffff;
-    border-color: #0284c7;
+  .tt-corner,
+  .tt-day-header {
+    padding: 0.45rem 0.15rem;
+    font-size: 0.64rem;
   }
 
   .tt-hour-label {
-    padding: 4px 5px;
-    font-size: 0.68rem;
+    padding: 3px 3px;
+    font-size: 0.58rem;
+  }
+
+  .class-block {
+    left: 2px;
+    right: 2px;
+    padding: 3px;
+    border-left-width: 2.5px;
+    font-size: 0.58rem;
+  }
+
+  .cb-top {
+    font-size: 0.6rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+  }
+
+  .cb-type-tag,
+  .cb-title {
+    display: none;
+  }
+
+  .cb-bottom {
+    flex-direction: column;
+    gap: 1px;
+    font-size: 0.54rem;
   }
 
   .form-row,
