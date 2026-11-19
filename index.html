@@ -35,19 +35,42 @@
     </div>
 
     <div class="header-actions">
-      <nav class="nav-drawer-triggers" aria-label="Schedule Navigators">
-        <button type="button" id="btn-nav-templates" class="btn btn-secondary btn-sm">Templates</button>
-        <button type="button" id="btn-nav-tracker" class="btn btn-secondary btn-sm">
-          Live Tracker <span id="current-day-pill" class="badge badge-neutral">PHT</span>
-        </button>
-        <button type="button" id="btn-nav-student" class="btn btn-secondary btn-sm">Student Info</button>
-      </nav>
       <button type="button" id="btn-download-pdf" class="btn btn-primary btn-sm">
         Download PDF
       </button>
       <button type="button" id="btn-print" class="btn btn-secondary btn-sm">
         Print
       </button>
+
+      <div class="hamburger-wrap">
+        <button
+          type="button"
+          id="btn-hamburger-menu"
+          class="btn btn-secondary btn-sm hamburger-btn"
+          aria-label="Open navigation menu"
+          aria-expanded="false"
+          aria-controls="hamburger-menu-dropdown"
+        >
+          <span class="hamburger-lines" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+        </button>
+
+        <div id="hamburger-menu-dropdown" class="hamburger-dropdown hidden" role="menu">
+          <button type="button" id="btn-nav-templates" class="hamburger-item" role="menuitem">
+            Templates
+          </button>
+          <button type="button" id="btn-nav-tracker" class="hamburger-item" role="menuitem">
+            <span>Live Tracker</span>
+            <span id="current-day-pill" class="badge badge-neutral">PHT</span>
+          </button>
+          <button type="button" id="btn-nav-student" class="hamburger-item" role="menuitem">
+            Student Info
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 
