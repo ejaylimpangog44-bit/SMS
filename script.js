@@ -301,13 +301,14 @@ async function togglePhoneAlerts() {
 
 function updateClockAndTracker() {
   const pht = getPhtParts();
-  el("pht-time").textContent = pht.timeString;
-  el("pht-date").textContent = pht.dateString;
-  el("current-day-pill").textContent = `${pht.weekdayShort} • PHT`;
+  if (el("pht-time")) el("pht-time").textContent = pht.timeString;
+  if (el("pht-date")) el("pht-date").textContent = pht.dateString;
+  if (el("current-day-pill")) el("current-day-pill").textContent = `${pht.weekdayShort} • PHT`;
 
   checkClassAlerts(pht);
 
   const box = el("live-status-box");
+  if (!box) return;
   if (!appState.subjects.length) {
     box.innerHTML = `<p class="helper-text" style="margin:0;">No classes loaded yet. Upload a COR photo or click + Add Class.</p>`;
     return;
@@ -1270,8 +1271,15 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   });
 
-  el("btn-download-pdf").addEventListener("click", downloadSchedulePdf);
-  el("btn-print").addEventListener("click", () => window.print());
+  el("btn-download-pdf")?.addEventListener("click", () => {
+    setHamburgerOpen(false);
+    downloadSchedulePdf();
+  });
+
+  el("btn-print")?.addEventListener("click", () => {
+    setHamburgerOpen(false);
+    window.print();
+  });
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
