@@ -806,60 +806,45 @@ function exportIcsFile() {
   link.click();
 }
 
-function downloadSchedulePdf() {
+async function downloadSchedulePdf() {
   if (!appState.subjects.length) {
     setStatus("Add or scan at least one class before downloading a PDF.", "error");
     return;
   }
 
+  const targetSheet = !el("view-agenda").classList.contains("hidden")
+    ? document.querySelector("#view-agenda .template-sheet")
+    : document.querySelector("#view-timetable .template-sheet");
+
   const { jsPDF } = window.jspdf || {};
-  if (!jsPDF) {
+  if (!targetSheet || typeof html2canvas !== "function" || !jsPDF) {
     window.print();
     return;
   }
 
+  setStatus("Rendering visual schedule sheet to PDF...", "info");
+  const canvas = await html2canvas(targetSheet, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: null
+  });
+
+  const imgData = canvas.toDataURL("image/png");
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-  const s = appState.student;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 20;
+  const maxW = pageWidth - margin * 2;
+  const maxH = pageHeight - margin * 2;
+  const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
+  const drawW = canvas.width * ratio;
+  const drawH = canvas.height * ratio;
+  const x = (pageWidth - drawW) / 2;
+  const y = (pageHeight - drawH) / 2;
 
-  doc.setFontSize(16);
-  doc.text("Schedule Management System — Class Schedule (PHT UTC+8)", 40, 38);
-
-  doc.setFontSize(10);
-  doc.text(
-    `Student: ${s.name || "—"} | ID: ${s.idNumber || "—"} | Course/Year: ${s.courseYear || "—"} | Section: ${s.section || "—"}`,
-    40,
-    56
-  );
-
-  const rows = appState.subjects.map((item) => [
-    item.edp || "—",
-    item.code || "—",
-    item.title || "—",
-    (item.days || []).join(", "),
-    `${format12Hour(item.start)} – ${format12Hour(item.end)}`,
-    item.room || "TBA",
-    item.type || "Lec",
-    String(item.units ?? 0)
-  ]);
-
-  if (typeof doc.autoTable === "function") {
-    doc.autoTable({
-      startY: 70,
-      head: [["EDP Code", "Subject", "Descriptive Title", "Days", "Time (PHT +8)", "Room", "Type", "Units"]],
-      body: rows,
-      styles: { fontSize: 8.5, cellPadding: 5 },
-      headStyles: { fillColor: [18, 24, 38] }
-    });
-  } else {
-    let y = 80;
-    rows.forEach((r) => {
-      doc.text(r.join(" | "), 40, y);
-      y += 16;
-    });
-  }
-
+  doc.addImage(imgData, "PNG", x, y, drawW, drawH);
   doc.save("COR_Schedule_PHT8.pdf");
-  setStatus("Downloaded COR_Schedule_PHT8.pdf automatically.", "success");
+  setStatus("Downloaded visual COR_Schedule_PHT8.pdf automatically.", "success");
 }
 
 function saveToLocalStorage() {
