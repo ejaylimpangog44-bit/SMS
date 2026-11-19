@@ -855,54 +855,10 @@ function closeStudentModal() {
   el("student-modal").classList.add("hidden");
 }
 
-function exportIcsFile() {
-  if (!appState.subjects.length) {
-    setStatus("Add or scan at least one class before exporting an .ICS file.", "error");
-    return;
-  }
-
-  const rruleDayMap = { MON: "MO", TUE: "TU", WED: "WE", THU: "TH", FRI: "FR", SAT: "SA" };
-  const dateSeedMap = {
-    MON: "20261123",
-    TUE: "20261124",
-    WED: "20261125",
-    THU: "20261126",
-    FRI: "20261127",
-    SAT: "20261128"
-  };
-
-  const lines = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Schedule Management System//COR Smart Scanner PHT+8//EN",
-    "CALSCALE:GREGORIAN"
-  ];
-
-  appState.subjects.forEach((item, idx) => {
-    if (!item.days.length) return;
-    const firstDay = item.days[0];
-    const startCompact = item.start.replace(":", "") + "00";
-    const endCompact = item.end.replace(":", "") + "00";
-    const byDay = item.days.map((d) => rruleDayMap[d]).join(",");
-
-    lines.push(
-      "BEGIN:VEVENT",
-      `UID:cor-${idx}-${Date.now()}@pht-schedule`,
-      `SUMMARY:${item.code}${item.edp ? ` [${item.edp}]` : ""} (${item.type}) - ${item.title}`,
-      `LOCATION:${item.room || "TBA"}`,
-      `DTSTART;TZID=Asia/Manila:${dateSeedMap[firstDay]}T${startCompact}`,
-      `DTEND;TZID=Asia/Manila:${dateSeedMap[firstDay]}T${endCompact}`,
-      `RRULE:FREQ=WEEKLY;BYDAY=${byDay}`,
-      "END:VEVENT"
-    );
+function openNavDrawer(drawerId) {
+  ["nav-templates-drawer", "nav-tracker-drawer", "nav-student-drawer"].forEach((id) => {
+    el(id)?.classList.toggle("hidden", id !== drawerId);
   });
-
-  lines.push("END:VCALENDAR");
-  const blob = new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "COR_Schedule_PHT8.ics";
-  link.click();
 }
 
 async function downloadSchedulePdf() {
@@ -950,15 +906,10 @@ async function downloadSchedulePdf() {
 
     const cloneGrid = clone.querySelector(".timetable-grid");
     if (cloneGrid) {
-      // Temporarily render all 6 days into cloneGrid for full PDF export
-      const tempGridId = "pdf-export-timetable-grid";
-      cloneGrid.id = tempGridId;
-
       const origGrid = el("timetable-grid");
       origGrid.id = "timetable-grid-temp-orig";
       cloneGrid.id = "timetable-grid";
 
-      const origFilterDay = appState.filterDay;
       appState.filterDay = "ALL";
       const filteredAll = appState.subjects.filter((item) => {
         return appState.filterType === "ALL" || item.type.toLowerCase() === appState.filterType.toLowerCase();
@@ -1022,7 +973,7 @@ async function downloadSchedulePdf() {
 
       cloneGrid.id = "pdf-timetable-grid-done";
       origGrid.id = "timetable-grid";
-      appState.filterDay = origFilterDay;
+      appState.filterDay = prevFilterDay;
     }
 
     exportHost.appendChild(clone);
@@ -1141,6 +1092,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   el("btn-scan-cor").addEventListener("click", runCorOcr);
   el("btn-clear-all").addEventListener("click", clearAllData);
+
+  el("btn-nav-templates")?.addEventListener("click", () => openNavDrawer("nav-templates-drawer"));
+  el("btn-nav-tracker")?.addEventListener("click", () => openNavDrawer("nav-tracker-drawer"));
+  el("btn-nav-student")?.addEventListener("click", () => openNavDrawer("nav-student-drawer"));
+
+  document.querySelectorAll("[data-close-nav]").forEach((btn) => {
+    btn.addEventListener("click", () => el(btn.dataset.closeNav)?.classList.add("hidden"));
+  });
+
+  ["nav-templates-drawer", "nav-tracker-drawer", "nav-student-drawer"].forEach((drawerId) => {
+    el(drawerId)?.addEventListener("click", (e) => {
+      if (e.target.id === drawerId) el(drawerId).classList.add("hidden");
+    });
+  });
 
   document.querySelectorAll(".template-option").forEach((btn) => {
     btn.addEventListener("click", () => applyTemplate(btn.dataset.template));
