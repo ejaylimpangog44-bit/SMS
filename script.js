@@ -833,33 +833,38 @@ async function downloadSchedulePdf() {
 
   const { jsPDF } = window.jspdf || {};
   if (!targetSheet || typeof html2canvas !== "function" || !jsPDF) {
+    setStatus("PDF library not loaded; opening print dialog instead.", "error");
     window.print();
     return;
   }
 
-  setStatus("Rendering visual schedule sheet to PDF...", "info");
-  const canvas = await html2canvas(targetSheet, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: null
-  });
+  try {
+    setStatus("Rendering visual schedule sheet to PDF...", "info");
+    const canvas = await html2canvas(targetSheet, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff"
+    });
 
-  const imgData = canvas.toDataURL("image/png");
-  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20;
-  const maxW = pageWidth - margin * 2;
-  const maxH = pageHeight - margin * 2;
-  const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
-  const drawW = canvas.width * ratio;
-  const drawH = canvas.height * ratio;
-  const x = (pageWidth - drawW) / 2;
-  const y = (pageHeight - drawH) / 2;
+    const imgData = canvas.toDataURL("image/png");
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const maxW = pageWidth - margin * 2;
+    const maxH = pageHeight - margin * 2;
+    const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
+    const drawW = canvas.width * ratio;
+    const drawH = canvas.height * ratio;
+    const x = (pageWidth - drawW) / 2;
+    const y = (pageHeight - drawH) / 2;
 
-  doc.addImage(imgData, "PNG", x, y, drawW, drawH);
-  doc.save("COR_Schedule_PHT8.pdf");
-  setStatus("Downloaded visual COR_Schedule_PHT8.pdf automatically.", "success");
+    doc.addImage(imgData, "PNG", x, y, drawW, drawH);
+    doc.save("COR_Schedule_PHT8.pdf");
+    setStatus("Downloaded visual COR_Schedule_PHT8.pdf automatically.", "success");
+  } catch (err) {
+    setStatus(`PDF export failed: ${err.message || "Unable to render PDF."}`, "error");
+  }
 }
 
 function saveToLocalStorage() {
@@ -1035,7 +1040,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAll();
   });
 
-  el("btn-export-ics").addEventListener("click", exportIcsFile);
+  
   el("btn-download-pdf").addEventListener("click", downloadSchedulePdf);
   el("btn-print").addEventListener("click", () => window.print());
 
