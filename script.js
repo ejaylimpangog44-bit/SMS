@@ -756,6 +756,21 @@ function closeModal() {
   el("subject-modal").classList.add("hidden");
 }
 
+function openStudentModal() {
+  const s = appState.student;
+  el("stu-name").value = s.name === "—" ? "" : s.name;
+  el("stu-id").value = s.idNumber === "—" ? "" : s.idNumber;
+  el("stu-section").value = s.section === "—" ? "" : s.section;
+  el("stu-course").value = s.courseYear === "—" ? "" : s.courseYear;
+  el("stu-term").value = s.term === "—" ? "" : s.term;
+  el("stu-school").value = s.school === "—" ? "" : s.school;
+  el("student-modal").classList.remove("hidden");
+}
+
+function closeStudentModal() {
+  el("student-modal").classList.add("hidden");
+}
+
 function exportIcsFile() {
   if (!appState.subjects.length) {
     setStatus("Add or scan at least one class before exporting an .ICS file.", "error");
@@ -973,6 +988,24 @@ document.addEventListener("DOMContentLoaded", () => {
   el("btn-add-subject").addEventListener("click", () => openModal(-1));
   el("btn-close-modal").addEventListener("click", closeModal);
   el("btn-cancel-modal").addEventListener("click", closeModal);
+
+  el("btn-edit-student").addEventListener("click", openStudentModal);
+  el("btn-close-student-modal").addEventListener("click", closeStudentModal);
+  el("btn-cancel-student-modal").addEventListener("click", closeStudentModal);
+
+  el("student-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    appState.student = {
+      name: el("stu-name").value.trim() || "—",
+      idNumber: el("stu-id").value.trim() || "—",
+      section: el("stu-section").value.trim() || "—",
+      courseYear: el("stu-course").value.trim() || "—",
+      term: el("stu-term").value.trim() || "—",
+      school: el("stu-school").value.trim() || "—"
+    };
+    closeStudentModal();
+    renderAll();
+  });
 
   el("subject-form").addEventListener("submit", (e) => {
     e.preventDefault();
