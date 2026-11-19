@@ -7,6 +7,14 @@ const DAY_NAMES = {
   FRI: "Friday",
   SAT: "Saturday"
 };
+const MOBILE_DAY_LABELS = {
+  MON: "MON",
+  TUE: "TUE",
+  WED: "WED",
+  THU: "THU",
+  FRI: "FRI",
+  SAT: "SAT"
+};
 
 const START_HOUR = 7;
 const END_HOUR = 21;
@@ -440,36 +448,24 @@ function renderTimetable(subjects) {
   const totalHours = END_HOUR - START_HOUR;
   const colHeight = totalHours * HOUR_HEIGHT;
   const isMobile = window.innerWidth <= 768;
-
-  if (isMobile && !DAYS_ORDER.includes(appState.mobileDay)) {
-    appState.mobileDay = DAYS_ORDER.includes(pht.weekdayShort) ? pht.weekdayShort : "MON";
-  }
-
-  const activeMobileDay = appState.filterDay !== "ALL" ? appState.filterDay : appState.mobileDay;
-  const visibleDays = isMobile ? [activeMobileDay] : DAYS_ORDER;
+  const visibleDays = DAYS_ORDER;
 
   grid.style.gridTemplateColumns = isMobile
-    ? "62px minmax(0, 1fr)"
+    ? "44px repeat(6, minmax(0, 1fr))"
     : "78px repeat(6, minmax(155px, 1fr))";
 
-  let html = "";
-  if (isMobile) {
-    const switcherHtml = DAYS_ORDER.map((d) => {
-      const activeClass = d === activeMobileDay ? "active" : "";
-      return `<button type="button" class="mobile-day-btn ${activeClass}" data-mobile-day="${d}">${d}</button>`;
-    }).join("");
-    html += `<div class="mobile-day-bar" style="grid-column: 1 / -1;">${switcherHtml}</div>`;
-  }
-
-  html += `<div class="tt-corner">PHT +8</div>`;
+  let html = `<div class="tt-corner">${isMobile ? "+8" : "PHT +8"}</div>`;
   visibleDays.forEach((day) => {
     const isToday = pht.weekdayShort === day;
-    html += `<div class="tt-day-header ${isToday ? "today-col" : ""}">${DAY_NAMES[day]}</div>`;
+    const headerLabel = isMobile ? MOBILE_DAY_LABELS[day] : DAY_NAMES[day];
+    html += `<div class="tt-day-header ${isToday ? "today-col" : ""}">${headerLabel}</div>`;
   });
 
   html += `<div class="tt-time-col" style="height:${colHeight}px;">`;
   for (let h = START_HOUR; h < END_HOUR; h++) {
-    const label = format12Hour(`${String(h).padStart(2, "0")}:00`).replace(":00 ", " ");
+    const label = isMobile
+      ? `${String(h % 12 === 0 ? 12 : h % 12).padStart(2, "0")}${h >= 12 ? "P" : "A"}`
+      : format12Hour(`${String(h).padStart(2, "0")}:00`).replace(":00 ", " ");
     html += `<div class="tt-hour-label">${label}</div>`;
   }
   html += `</div>`;
@@ -494,7 +490,10 @@ function renderTimetable(subjects) {
       const top = ((startMins - START_HOUR * 60) / 60) * HOUR_HEIGHT;
       const height = Math.max(28, ((endMins - startMins) / 60) * HOUR_HEIGHT - 2);
       const color = getColorForSubject(item.code);
-      const edpLabel = item.edp && item.edp !== item.code ? ` · ${item.edp}` : "";
+      const edpLabel = !isMobile && item.edp && item.edp !== item.code ? ` · ${item.edp}` : "";
+      const timeLabel = isMobile
+        ? `${format12Hour(item.start).replace(" ", "")}–${format12Hour(item.end).replace(" ", "")}`
+        : `${format12Hour(item.start)}–${format12Hour(item.end)}`;
 
       html += `
         <div class="class-block" data-index="${realIndex}"
@@ -505,7 +504,7 @@ function renderTimetable(subjects) {
           </div>
           ${height >= 46 ? `<div class="cb-title">${item.title}</div>` : ""}
           <div class="cb-bottom">
-            <span>${format12Hour(item.start)}–${format12Hour(item.end)}</span>
+            <span>${timeLabel}</span>
             <span>${item.room || "TBA"}</span>
           </div>
         </div>
@@ -516,17 +515,6 @@ function renderTimetable(subjects) {
   });
 
   grid.innerHTML = html;
-
-  grid.querySelectorAll(".mobile-day-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      appState.mobileDay = btn.dataset.mobileDay;
-      if (appState.filterDay !== "ALL") {
-        appState.filterDay = appState.mobileDay;
-        el("filter-day").value = appState.mobileDay;
-      }
-      renderAll();
-    });
-  });
 
   grid.querySelectorAll(".class-block").forEach((node) => {
     node.addEventListener("click", () => openModal(Number(node.dataset.index)));
