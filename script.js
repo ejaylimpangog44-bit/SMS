@@ -1198,6 +1198,18 @@ document.addEventListener("DOMContentLoaded", () => {
   el("btn-download-pdf").addEventListener("click", downloadSchedulePdf);
   el("btn-print").addEventListener("click", () => window.print());
 
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      [
+        "nav-templates-drawer",
+        "nav-tracker-drawer",
+        "nav-student-drawer",
+        "subject-modal",
+        "student-modal"
+      ].forEach((id) => el(id)?.classList.add("hidden"));
+    }
+  });
+
   renderAll();
   setInterval(updateClockAndTracker, 1000);
 });
