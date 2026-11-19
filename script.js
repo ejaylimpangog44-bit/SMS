@@ -32,6 +32,7 @@ const BLOCK_COLORS = [
 ];
 
 const STORAGE_KEY = "sms_cor_separated_v1";
+const FIRST_VISIT_KEY = "sms_cor_first_visit_shown_v1";
 const ALERT_LEAD_MINUTES = 10;
 let alertsEnabled = false;
 const firedAlertKeys = new Set();
@@ -54,6 +55,14 @@ let appState = {
 };
 
 const el = (id) => document.getElementById(id);
+
+function openUploadModal() {
+  el("upload-cor-modal")?.classList.remove("hidden");
+}
+
+function closeUploadModal() {
+  el("upload-cor-modal")?.classList.add("hidden");
+}
 
 function getPhtParts() {
   const now = new Date();
@@ -1138,6 +1147,16 @@ document.addEventListener("DOMContentLoaded", () => {
     setHamburgerOpen(!expanded);
   });
 
+  el("btn-nav-upload-cor")?.addEventListener("click", () => {
+    setHamburgerOpen(false);
+    openUploadModal();
+  });
+
+  el("btn-close-upload-modal")?.addEventListener("click", closeUploadModal);
+  el("upload-cor-modal")?.addEventListener("click", (e) => {
+    if (e.target.id === "upload-cor-modal") closeUploadModal();
+  });
+
   el("btn-nav-templates")?.addEventListener("click", () => {
     setHamburgerOpen(false);
     openNavDrawer("nav-templates-drawer");
@@ -1276,6 +1295,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "nav-templates-drawer",
         "nav-tracker-drawer",
         "nav-student-drawer",
+        "upload-cor-modal",
         "subject-modal",
         "student-modal"
       ].forEach((id) => el(id)?.classList.add("hidden"));
@@ -1284,6 +1304,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderAll();
   setInterval(updateClockAndTracker, 1000);
+
+  try {
+    if (!localStorage.getItem(FIRST_VISIT_KEY)) {
+      localStorage.setItem(FIRST_VISIT_KEY, "1");
+      openUploadModal();
+    }
+  } catch (_) {
+    openUploadModal();
+  }
 });
 
 window.addEventListener("resize", () => {
