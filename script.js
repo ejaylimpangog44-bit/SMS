@@ -24,6 +24,9 @@ const BLOCK_COLORS = [
 ];
 
 const STORAGE_KEY = "sms_cor_separated_v1";
+const ALERT_LEAD_MINUTES = 10;
+let alertsEnabled = false;
+const firedAlertKeys = new Set();
 
 let appState = {
   template: "scrapbook-daisy",
@@ -191,11 +194,116 @@ function applyTemplate(templateName) {
   saveToLocalStorage();
 }
 
+function playOfflineChime() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const notes = [659.25, 880]; // E5 -> A5
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.08, ctx.currentTime + i * 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.16 + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.16);
+      osc.stop(ctx.currentTime + i * 0.16 + 0.26);
+    });
+  } catch (_) {}
+}
+
+function showInAppClassAlert(title, body) {
+  const banner = el("class-alert-banner");
+  if (!banner) return;
+  banner.innerHTML = `<strong>${title}</strong><br><span>${body}</span>`;
+  banner.className = "scan-status success";
+  banner.classList.remove("hidden");
+}
+
+function triggerClassAlert(alertId, title, body) {
+  if (firedAlertKeys.has(alertId)) return;
+  firedAlertKeys.add(alertId);
+
+  showInAppClassAlert(title, body);
+  playOfflineChime();
+
+  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+    try {
+      navigator.vibrate([220, 120, 220]);
+    } catch (_) {}
+  }
+
+  if (alertsEnabled && typeof Notification !== "undefined" && Notification.permission === "granted") {
+    try {
+      new Notification(title, {
+        body,
+        tag: alertId,
+        renotify: true
+      });
+    } catch (_) {}
+  }
+}
+
+function checkClassAlerts(pht) {
+  if (!appState.subjects.length || !DAYS_ORDER.includes(pht.weekdayShort)) return;
+
+  const todaysClasses = appState.subjects.filter((s) => s.days.includes(pht.weekdayShort));
+  todaysClasses.forEach((item) => {
+    const startMins = toMinutes(item.start);
+    const diff = startMins - pht.minutesFromMidnight;
+    const roomText = item.room || "TBA";
+    const timeText = `${format12Hour(item.start)} – ${format12Hour(item.end)}`;
+
+    if (diff === ALERT_LEAD_MINUTES) {
+      triggerClassAlert(
+        `${pht.dateString}-${item.code}-${item.start}-soon`,
+        `Upcoming Class in ${ALERT_LEAD_MINUTES}m: ${item.code} (${item.type})`,
+        `${timeText} • Room ${roomText} • PHT +8`
+      );
+    } else if (diff === 0) {
+      triggerClassAlert(
+        `${pht.dateString}-${item.code}-${item.start}-now`,
+        `Class Starting Now: ${item.code} (${item.type})`,
+        `${timeText} • Room ${roomText} • PHT +8`
+      );
+    }
+  });
+}
+
+async function togglePhoneAlerts() {
+  if (!alertsEnabled) {
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      try {
+        const perm = await Notification.requestPermission();
+        alertsEnabled = perm === "granted";
+      } catch (_) {
+        alertsEnabled = false;
+      }
+    } else if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      alertsEnabled = true;
+    } else {
+      // Still allow offline in-app banner + sound + vibration even if OS blocks browser notifications
+      alertsEnabled = true;
+    }
+    el("btn-toggle-alerts").textContent = "Alerts: ON (Offline)";
+    setStatus("Class alerts enabled (in-app banner, chime, vibration & browser notification when permitted).", "success");
+  } else {
+    alertsEnabled = false;
+    el("btn-toggle-alerts").textContent = "Enable Phone Alerts";
+    setStatus("Class alerts turned off.", "info");
+  }
+}
+
 function updateClockAndTracker() {
   const pht = getPhtParts();
   el("pht-time").textContent = pht.timeString;
   el("pht-date").textContent = pht.dateString;
   el("current-day-pill").textContent = `${pht.weekdayShort} • PHT`;
+
+  checkClassAlerts(pht);
 
   const box = el("live-status-box");
   if (!appState.subjects.length) {
@@ -1040,7 +1148,16 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAll();
   });
 
-  
+  el("btn-toggle-alerts").addEventListener("click", togglePhoneAlerts);
+  el("btn-test-alert").addEventListener("click", () => {
+    firedAlertKeys.delete("TEST-ALERT");
+    triggerClassAlert(
+      "TEST-ALERT",
+      "Test Alert: IT ADET22 (Lec)",
+      "01:30 PM – 02:30 PM • Room OL 121 • PHT +8"
+    );
+  });
+
   el("btn-download-pdf").addEventListener("click", downloadSchedulePdf);
   el("btn-print").addEventListener("click", () => window.print());
 
