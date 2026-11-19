@@ -41,7 +41,8 @@ let appState = {
   subjects: [],
   uploadedDataUrl: null,
   filterDay: "ALL",
-  filterType: "ALL"
+  filterType: "ALL",
+  mobileDay: "MON"
 };
 
 const el = (id) => document.getElementById(id);
@@ -194,7 +195,7 @@ function playOfflineChime() {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
-    const notes = [659.25, 880]; // E5 -> A5
+    const notes = [659.25, 880];
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -368,6 +369,14 @@ function detectConflicts(subjects) {
   return warnings;
 }
 
+function getFilteredSubjects() {
+  return appState.subjects.filter((item) => {
+    const dayMatch = appState.filterDay === "ALL" || item.days.includes(appState.filterDay);
+    const typeMatch = appState.filterType === "ALL" || item.type.toLowerCase() === appState.filterType.toLowerCase();
+    return dayMatch && typeMatch;
+  });
+}
+
 function renderAll() {
   const s = appState.student;
   el("info-name").textContent = s.name || "—";
@@ -409,12 +418,7 @@ function renderAll() {
     banner.classList.add("hidden");
   }
 
-  const filtered = appState.subjects.filter((item) => {
-    const dayMatch = appState.filterDay === "ALL" || item.days.includes(appState.filterDay);
-    const typeMatch = appState.filterType === "ALL" || item.type.toLowerCase() === appState.filterType.toLowerCase();
-    return dayMatch && typeMatch;
-  });
-
+  const filtered = getFilteredSubjects();
   renderTimetable(filtered);
   renderAgenda(filtered);
   renderTable(filtered);
@@ -427,9 +431,30 @@ function renderTimetable(subjects) {
   const pht = getPhtParts();
   const totalHours = END_HOUR - START_HOUR;
   const colHeight = totalHours * HOUR_HEIGHT;
+  const isMobile = window.innerWidth <= 768;
 
-  let html = `<div class="tt-corner">PHT +8</div>`;
-  DAYS_ORDER.forEach((day) => {
+  if (isMobile && !DAYS_ORDER.includes(appState.mobileDay)) {
+    appState.mobileDay = DAYS_ORDER.includes(pht.weekdayShort) ? pht.weekdayShort : "MON";
+  }
+
+  const activeMobileDay = appState.filterDay !== "ALL" ? appState.filterDay : appState.mobileDay;
+  const visibleDays = isMobile ? [activeMobileDay] : DAYS_ORDER;
+
+  grid.style.gridTemplateColumns = isMobile
+    ? "62px minmax(0, 1fr)"
+    : "78px repeat(6, minmax(155px, 1fr))";
+
+  let html = "";
+  if (isMobile) {
+    const switcherHtml = DAYS_ORDER.map((d) => {
+      const activeClass = d === activeMobileDay ? "active" : "";
+      return `<button type="button" class="mobile-day-btn ${activeClass}" data-mobile-day="${d}">${d}</button>`;
+    }).join("");
+    html += `<div class="mobile-day-bar" style="grid-column: 1 / -1;">${switcherHtml}</div>`;
+  }
+
+  html += `<div class="tt-corner">PHT +8</div>`;
+  visibleDays.forEach((day) => {
     const isToday = pht.weekdayShort === day;
     html += `<div class="tt-day-header ${isToday ? "today-col" : ""}">${DAY_NAMES[day]}</div>`;
   });
@@ -441,7 +466,7 @@ function renderTimetable(subjects) {
   }
   html += `</div>`;
 
-  DAYS_ORDER.forEach((day) => {
+  visibleDays.forEach((day) => {
     const isToday = pht.weekdayShort === day;
     const dayClasses = subjects.filter((s) => s.days.includes(day));
     html += `<div class="tt-day-col ${isToday ? "today-col" : ""}" style="height:${colHeight}px;">`;
@@ -461,12 +486,13 @@ function renderTimetable(subjects) {
       const top = ((startMins - START_HOUR * 60) / 60) * HOUR_HEIGHT;
       const height = Math.max(28, ((endMins - startMins) / 60) * HOUR_HEIGHT - 2);
       const color = getColorForSubject(item.code);
+      const edpLabel = item.edp && item.edp !== item.code ? ` · ${item.edp}` : "";
 
       html += `
         <div class="class-block" data-index="${realIndex}"
              style="top:${top}px; height:${height}px; background:${color.bg}; border-left-color:${color.border}; color:${color.text};">
           <div class="cb-top">
-            <span>${item.code}${item.edp ? ` · ${item.edp}` : ""}</span>
+            <span>${item.code}${edpLabel}</span>
             <span class="cb-type-tag">${item.type}</span>
           </div>
           ${height >= 46 ? `<div class="cb-title">${item.title}</div>` : ""}
@@ -482,6 +508,18 @@ function renderTimetable(subjects) {
   });
 
   grid.innerHTML = html;
+
+  grid.querySelectorAll(".mobile-day-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      appState.mobileDay = btn.dataset.mobileDay;
+      if (appState.filterDay !== "ALL") {
+        appState.filterDay = appState.mobileDay;
+        el("filter-day").value = appState.mobileDay;
+      }
+      renderAll();
+    });
+  });
+
   grid.querySelectorAll(".class-block").forEach((node) => {
     node.addEventListener("click", () => openModal(Number(node.dataset.index)));
   });
@@ -506,7 +544,7 @@ function renderAgenda(subjects) {
               const color = getColorForSubject(item.code);
               return `
                 <div class="agenda-item" data-index="${realIndex}" style="border-left-color:${color.border};">
-                  <div style="display:flex; justify-content:space-between; font-weight:700; font-size:0.84rem;">
+                  <div style="display:flex; justify-content:space-between; font-weight:700; font-size:0.84rem; gap:0.4rem;">
                     <span>${item.code} (${item.type})</span>
                     <span class="mono-text" style="font-size:0.74rem;">
                       ${format12Hour(item.start)} – ${format12Hour(item.end)}
@@ -652,7 +690,12 @@ function parseCorText(rawText) {
     if (edp) title = title.replace(edp, " ");
     if (codeMatch) title = title.replace(codeMatch[0], " ");
     if (dayMatch) title = title.replace(dayMatch[0], " ");
-    title = title.replace(/^[\s\-:|.]+|[\s\-:|.]+$/g, "").replace(/\s{2,}/g, " ").trim();
+    title = title
+      .replace(/[^A-Z0-9\s&()\-/.,]/gi, " ")
+      .replace(/\b[A-Z]{1,2}\b(?=\s+[A-Z]{1,2}\b)/g, " ")
+      .replace(/^[\s\-:|./,]+|[\s\-:|./,]+$/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
     if (!title) title = code;
 
     const afterTokens = afterTime.split(/\s+/).filter(Boolean);
@@ -722,7 +765,7 @@ async function runCorOcr() {
   progFill.style.width = "5%";
   progPct.textContent = "5%";
   progStage.textContent = "Starting Tesseract OCR...";
-  setStatus("Scanning schedule image locally in your browser (PHT +8)...", "info");
+  setStatus("Scanning COR image locally in your browser (PHT +8)...", "info");
 
   try {
     const worker = await Tesseract.createWorker("eng", 1, {
@@ -754,13 +797,13 @@ async function runCorOcr() {
     if (parsed.subjects.length) {
       appState.subjects = parsed.subjects;
       renderAll();
-      setStatus(`Scan complete: extracted ${parsed.subjects.length} class(es) with EDP codes in PHT +8.`, "success");
+      setStatus(`OCR complete: extracted ${parsed.subjects.length} class(es) with EDP codes in PHT +8.`, "success");
     } else {
       renderAll();
-      setStatus("Scan finished, but no schedule rows matched automatically. Click + Add Class to add them manually.", "error");
+      setStatus("OCR read the text, but no schedule rows matched automatically. Click + Add Class to add them manually.", "error");
     }
   } catch (err) {
-    setStatus(`Scan failed: ${err.message || "Unable to process image."}`, "error");
+    setStatus(`OCR failed: ${err.message || "Unable to process image."}`, "error");
   } finally {
     scanBtn.disabled = false;
     progWrap.classList.add("hidden");
@@ -810,6 +853,56 @@ function openStudentModal() {
 
 function closeStudentModal() {
   el("student-modal").classList.add("hidden");
+}
+
+function exportIcsFile() {
+  if (!appState.subjects.length) {
+    setStatus("Add or scan at least one class before exporting an .ICS file.", "error");
+    return;
+  }
+
+  const rruleDayMap = { MON: "MO", TUE: "TU", WED: "WE", THU: "TH", FRI: "FR", SAT: "SA" };
+  const dateSeedMap = {
+    MON: "20261123",
+    TUE: "20261124",
+    WED: "20261125",
+    THU: "20261126",
+    FRI: "20261127",
+    SAT: "20261128"
+  };
+
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Schedule Management System//COR Smart Scanner PHT+8//EN",
+    "CALSCALE:GREGORIAN"
+  ];
+
+  appState.subjects.forEach((item, idx) => {
+    if (!item.days.length) return;
+    const firstDay = item.days[0];
+    const startCompact = item.start.replace(":", "") + "00";
+    const endCompact = item.end.replace(":", "") + "00";
+    const byDay = item.days.map((d) => rruleDayMap[d]).join(",");
+
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:cor-${idx}-${Date.now()}@pht-schedule`,
+      `SUMMARY:${item.code}${item.edp ? ` [${item.edp}]` : ""} (${item.type}) - ${item.title}`,
+      `LOCATION:${item.room || "TBA"}`,
+      `DTSTART;TZID=Asia/Manila:${dateSeedMap[firstDay]}T${startCompact}`,
+      `DTEND;TZID=Asia/Manila:${dateSeedMap[firstDay]}T${endCompact}`,
+      `RRULE:FREQ=WEEKLY;BYDAY=${byDay}`,
+      "END:VEVENT"
+    );
+  });
+
+  lines.push("END:VCALENDAR");
+  const blob = new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "COR_Schedule_PHT8.ics";
+  link.click();
 }
 
 async function downloadSchedulePdf() {
@@ -894,7 +987,7 @@ function clearAllData() {
   appState.subjects = [];
   localStorage.removeItem(STORAGE_KEY);
   renderAll();
-  setStatus("Schedule data cleared. Ready for a new upload.", "info");
+  setStatus("Schedule data cleared. Ready for a new COR upload.", "info");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -954,6 +1047,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   el("filter-day").addEventListener("change", (e) => {
     appState.filterDay = e.target.value;
+    if (appState.filterDay !== "ALL") {
+      appState.mobileDay = appState.filterDay;
+    }
     renderAll();
   });
 
@@ -1027,4 +1123,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderAll();
   setInterval(updateClockAndTracker, 1000);
+});
+
+window.addEventListener("resize", () => {
+  renderTimetable(getFilteredSubjects());
 });
