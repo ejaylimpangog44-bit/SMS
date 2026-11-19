@@ -35,6 +35,13 @@
         <span id="pht-time" class="mono-text">--:--:-- --</span>
         <span id="pht-date" class="pht-date-text">---</span>
       </div>
+      <nav class="nav-drawer-triggers" aria-label="Schedule Navigators">
+        <button type="button" id="btn-nav-templates" class="btn btn-secondary btn-sm">Templates</button>
+        <button type="button" id="btn-nav-tracker" class="btn btn-secondary btn-sm">
+          Live Tracker <span id="current-day-pill" class="badge badge-neutral">PHT</span>
+        </button>
+        <button type="button" id="btn-nav-student" class="btn btn-secondary btn-sm">Student Info</button>
+      </nav>
       <button type="button" id="btn-download-pdf" class="btn btn-primary">
         Download PDF
       </button>
@@ -44,11 +51,11 @@
     </div>
   </header>
 
-  <main class="main-layout">
+  <main class="main-layout focused-main-layout">
     <aside class="sidebar-panel">
       <section class="card upload-card">
         <div class="card-header">
-          <h2>1. Upload Photo</h2>
+          <h2>1. Upload COR Photo</h2>
           <span class="badge badge-accent">Class Schedule</span>
         </div>
         <p class="helper-text">
@@ -88,137 +95,15 @@
           <button type="button" id="btn-scan-cor" class="btn btn-primary full-width" disabled>
             Scan &amp; Build Schedule
           </button>
+          <button type="button" id="btn-reload-sample" class="btn btn-secondary full-width">
+            Reload Sample COR
+          </button>
           <button type="button" id="btn-clear-all" class="btn btn-ghost full-width">
             Clear Schedule Data
           </button>
         </div>
 
         <div id="scan-status" class="scan-status hidden" role="status"></div>
-      </section>
-
-      <section class="card template-card">
-        <div class="card-header">
-          <h2>2. Template Changer</h2>
-          <span class="badge badge-accent">4 Themes</span>
-        </div>
-        <div id="template-selector" class="template-selector" role="radiogroup" aria-label="Schedule Template">
-          <button type="button" class="template-option active" data-template="scrapbook-daisy">
-            <span class="template-swatches">
-              <i style="background:#efe8dc;"></i>
-              <i style="background:#c49a6c;"></i>
-              <i style="background:#5a3825;"></i>
-            </span>
-            <span class="template-meta">
-              <strong>Scrapbook Daisy &amp; Kraft</strong>
-              <small>Paper collage &amp; warm cream cards</small>
-            </span>
-          </button>
-
-          <button type="button" class="template-option" data-template="espresso-parchment">
-            <span class="template-swatches">
-              <i style="background:#3a281e;"></i>
-              <i style="background:#e6cbb0;"></i>
-              <i style="background:#cbb399;"></i>
-            </span>
-            <span class="template-meta">
-              <strong>Espresso &amp; Parchment Grid</strong>
-              <small>Dark espresso board &amp; day boxes</small>
-            </span>
-          </button>
-
-          <button type="button" class="template-option" data-template="pastel-paperplane">
-            <span class="template-swatches">
-              <i style="background:#a8d0e6;"></i>
-              <i style="background:#f9e27d;"></i>
-              <i style="background:#f2b880;"></i>
-            </span>
-            <span class="template-meta">
-              <strong>Pastel Paper Plane</strong>
-              <small>Soft color-blocked M–S rows</small>
-            </span>
-          </button>
-
-          <button type="button" class="template-option" data-template="minimalist-stone">
-            <span class="template-swatches">
-              <i style="background:#e3e2dd;"></i>
-              <i style="background:#1c1c1c;"></i>
-              <i style="background:#d4d2cc;"></i>
-            </span>
-            <span class="template-meta">
-              <strong>Minimalist Stone Grid</strong>
-              <small>Clean outlined grid &amp; notes</small>
-            </span>
-          </button>
-        </div>
-      </section>
-
-      <section class="card live-tracker-card">
-        <div class="card-header">
-          <h2>3. Live Class Tracker</h2>
-          <span id="current-day-pill" class="badge badge-neutral">PHT</span>
-        </div>
-        <div style="display:flex; gap:0.4rem; margin-bottom:0.6rem; flex-wrap:wrap;">
-          <button type="button" id="btn-toggle-alerts" class="btn btn-xs btn-secondary">
-            Enable Phone Alerts
-          </button>
-          <button type="button" id="btn-test-alert" class="btn btn-xs btn-ghost">
-            Test Alert
-          </button>
-        </div>
-        <div id="class-alert-banner" class="scan-status hidden" role="alert" style="margin-bottom:0.6rem;"></div>
-        <div id="live-status-box" class="live-status-box">
-          <p class="muted-label">Checking PHT +8 class status...</p>
-        </div>
-      </section>
-
-      <section class="card student-card">
-        <div class="card-header">
-          <h2>Student &amp; Info</h2>
-          <div style="display:flex; gap:0.4rem;">
-            <button type="button" id="btn-edit-student" class="btn btn-xs btn-secondary">Edit Info</button>
-            <button type="button" id="btn-add-subject" class="btn btn-xs btn-secondary">+ Add Class</button>
-          </div>
-        </div>
-        <div class="student-grid">
-          <div class="info-item">
-            <span class="info-label">Student Name</span>
-            <span id="info-name" class="info-value">—</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">ID Number</span>
-            <span id="info-id" class="info-value mono-text">—</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Course &amp; Year</span>
-            <span id="info-course" class="info-value">—</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Section</span>
-            <span id="info-section" class="info-value">—</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">School / Strand</span>
-            <span id="info-school" class="info-value">—</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Term / Assessment</span>
-            <span id="info-term" class="info-value">—</span>
-          </div>
-        </div>
-        <div class="stats-strip">
-          <div class="stat-pill">
-            <strong id="stat-subjects">0</strong>
-            <span>Subjects</span>
-          </div>
-          <div class="stat-pill">
-            <strong id="stat-units">0</strong>
-            <span>Total Units</span>
-          </div>
-          <div class="stat-pill">
-            <strong id="stat-hours">0h</strong>
-            <span>Weekly Hrs</span>
-          </div>
-        </div>
       </section>
     </aside>
 
@@ -251,6 +136,7 @@
             <option value="Lec">Lecture Only</option>
             <option value="Lab">Laboratory Only</option>
           </select>
+          <button type="button" id="btn-add-subject" class="btn btn-xs btn-secondary">+ Add Class</button>
         </div>
       </div>
 
@@ -261,7 +147,7 @@
           <div class="sheet-banner">
             <div class="sheet-banner-left">
               <span id="sheet-kicker" class="sheet-kicker">PHT (UTC+8) • MONDAY–SATURDAY</span>
-              <h2 id="sheet-title" class="sheet-title">Class Schedule</h2>
+              <h2 id="sheet-title" class="sheet-title">CERTIFICATE OF REGISTRATION WEEKLY PLANNER CLASS SCHEDULE (MON - SAT)</h2>
             </div>
             <div id="sheet-student-line" class="sheet-student-line">
               Student: <strong>—</strong> • ID: <strong class="mono-text">—</strong> • Section: <strong>—</strong>
@@ -284,7 +170,7 @@
           <div class="sheet-banner">
             <div class="sheet-banner-left">
               <span id="agenda-kicker" class="sheet-kicker">PHT (UTC+8) • DAY-BY-DAY CARDS</span>
-              <h2 id="agenda-title" class="sheet-title">Class Schedule</h2>
+              <h2 id="agenda-title" class="sheet-title">CERTIFICATE OF REGISTRATION WEEKLY PLANNER CLASS SCHEDULE (MON - SAT)</h2>
             </div>
             <div id="agenda-student-line" class="sheet-student-line">
               Student: <strong>—</strong> • Section: <strong>—</strong>
@@ -316,6 +202,137 @@
       </div>
     </section>
   </main>
+
+  <div id="nav-templates-drawer" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="nav-templates-title">
+    <div class="modal-card navigator-card">
+      <div class="modal-header">
+        <h3 id="nav-templates-title">Template Changer</h3>
+        <button type="button" class="btn-close" data-close-nav="nav-templates-drawer">&times;</button>
+      </div>
+      <div id="template-selector" class="template-selector" role="radiogroup" aria-label="Schedule Template">
+        <button type="button" class="template-option active" data-template="scrapbook-daisy">
+          <span class="template-swatches">
+            <i style="background:#efe8dc;"></i>
+            <i style="background:#c49a6c;"></i>
+            <i style="background:#5a3825;"></i>
+          </span>
+          <span class="template-meta">
+            <strong>Scrapbook Daisy &amp; Kraft</strong>
+            <small>Paper collage &amp; warm cream cards</small>
+          </span>
+        </button>
+
+        <button type="button" class="template-option" data-template="espresso-parchment">
+          <span class="template-swatches">
+            <i style="background:#3a281e;"></i>
+            <i style="background:#e6cbb0;"></i>
+            <i style="background:#cbb399;"></i>
+          </span>
+          <span class="template-meta">
+            <strong>Espresso &amp; Parchment Grid</strong>
+            <small>Dark espresso board &amp; day boxes</small>
+          </span>
+        </button>
+
+        <button type="button" class="template-option" data-template="pastel-paperplane">
+          <span class="template-swatches">
+            <i style="background:#a8d0e6;"></i>
+            <i style="background:#f9e27d;"></i>
+            <i style="background:#f2b880;"></i>
+          </span>
+          <span class="template-meta">
+            <strong>Pastel Paper Plane</strong>
+            <small>Soft color-blocked M–S rows</small>
+          </span>
+        </button>
+
+        <button type="button" class="template-option" data-template="minimalist-stone">
+          <span class="template-swatches">
+            <i style="background:#e3e2dd;"></i>
+            <i style="background:#1c1c1c;"></i>
+            <i style="background:#d4d2cc;"></i>
+          </span>
+          <span class="template-meta">
+            <strong>Minimalist Stone Grid</strong>
+            <small>Clean outlined grid &amp; notes</small>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="nav-tracker-drawer" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="nav-tracker-title">
+    <div class="modal-card navigator-card">
+      <div class="modal-header">
+        <h3 id="nav-tracker-title">Live Class Tracker</h3>
+        <button type="button" class="btn-close" data-close-nav="nav-tracker-drawer">&times;</button>
+      </div>
+      <div style="display:flex; gap:0.4rem; margin-bottom:0.6rem; flex-wrap:wrap;">
+        <button type="button" id="btn-toggle-alerts" class="btn btn-xs btn-secondary">
+          Enable Phone Alerts
+        </button>
+        <button type="button" id="btn-test-alert" class="btn btn-xs btn-ghost">
+          Test Alert
+        </button>
+      </div>
+      <div id="class-alert-banner" class="scan-status hidden" role="alert" style="margin-bottom:0.6rem;"></div>
+      <div id="live-status-box" class="live-status-box">
+        <p class="muted-label">Checking PHT +8 class status...</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="nav-student-drawer" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="nav-student-title">
+    <div class="modal-card navigator-card">
+      <div class="modal-header">
+        <h3 id="nav-student-title">Student &amp; Info</h3>
+        <button type="button" class="btn-close" data-close-nav="nav-student-drawer">&times;</button>
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-bottom:0.65rem;">
+        <button type="button" id="btn-edit-student" class="btn btn-xs btn-secondary">Edit Info</button>
+      </div>
+      <div class="student-grid">
+        <div class="info-item">
+          <span class="info-label">Student Name</span>
+          <span id="info-name" class="info-value">—</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">ID Number</span>
+          <span id="info-id" class="info-value mono-text">—</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Course &amp; Year</span>
+          <span id="info-course" class="info-value">—</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Section</span>
+          <span id="info-section" class="info-value">—</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">School / Strand</span>
+          <span id="info-school" class="info-value">—</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Term / Assessment</span>
+          <span id="info-term" class="info-value">—</span>
+        </div>
+      </div>
+      <div class="stats-strip">
+        <div class="stat-pill">
+          <strong id="stat-subjects">0</strong>
+          <span>Subjects</span>
+        </div>
+        <div class="stat-pill">
+          <strong id="stat-units">0</strong>
+          <span>Total Units</span>
+        </div>
+        <div class="stat-pill">
+          <strong id="stat-hours">0h</strong>
+          <span>Weekly Hrs</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="subject-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-card">
@@ -388,7 +405,7 @@
   <div id="student-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="student-modal-title">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 id="student-modal-title">Edit Student &amp;Info</h3>
+        <h3 id="student-modal-title">Edit Student &amp; Info</h3>
         <button type="button" id="btn-close-student-modal" class="btn-close">&times;</button>
       </div>
       <form id="student-form" class="modal-form">
