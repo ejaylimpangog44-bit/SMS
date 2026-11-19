@@ -41,6 +41,9 @@
       <button type="button" id="btn-export-ics" class="btn btn-secondary">
         Export .ICS
       </button>
+      <button type="button" id="btn-download-pdf" class="btn btn-primary">
+        Download PDF
+      </button>
       <button type="button" id="btn-print" class="btn btn-secondary">
         Print
       </button>
@@ -302,8 +305,8 @@
         <div class="template-sheet">
           <div class="sheet-banner">
             <div class="sheet-banner-left">
-              <span class="sheet-kicker">PHT (UTC+8) • DAY-BY-DAY CARDS</span>
-              <h2 class="sheet-title">Class Schedule</h2>
+              <span id="agenda-kicker" class="sheet-kicker">PHT (UTC+8) • DAY-BY-DAY CARDS</span>
+              <h2 id="agenda-title" class="sheet-title">Class Schedule</h2>
             </div>
             <div id="agenda-student-line" class="sheet-student-line">
               Student: <strong>—</strong> • Section: <strong>—</strong>
@@ -404,6 +407,8 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
