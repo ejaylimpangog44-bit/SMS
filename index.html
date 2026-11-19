@@ -38,9 +38,6 @@
       <button type="button" id="btn-toggle-ocr-inspector" class="btn btn-secondary">
         OCR Inspector
       </button>
-      <button type="button" id="btn-export-ics" class="btn btn-secondary">
-        Export .ICS
-      </button>
       <button type="button" id="btn-download-pdf" class="btn btn-primary">
         Download PDF
       </button>
@@ -172,7 +169,10 @@
       <section class="card student-card">
         <div class="card-header">
           <h2>Student &amp; COR Info</h2>
-          <button type="button" id="btn-add-subject" class="btn btn-xs btn-secondary">+ Add Class</button>
+          <div style="display:flex; gap:0.4rem;">
+            <button type="button" id="btn-edit-student" class="btn btn-xs btn-secondary">Edit Info</button>
+            <button type="button" id="btn-add-subject" class="btn btn-xs btn-secondary">+ Add Class</button>
+          </div>
         </div>
         <div class="student-grid">
           <div class="info-item">
@@ -402,6 +402,49 @@
         <div class="modal-footer">
           <button type="button" id="btn-cancel-modal" class="btn btn-secondary">Cancel</button>
           <button type="submit" class="btn btn-primary">Save Class</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="student-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="student-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="student-modal-title">Edit Student &amp; COR Info</h3>
+        <button type="button" id="btn-close-student-modal" class="btn-close">&times;</button>
+      </div>
+      <form id="student-form" class="modal-form">
+        <label>
+          Student Name
+          <input type="text" id="stu-name" placeholder="e.g. LIMPANGOG, AJ JULY N." />
+        </label>
+        <div class="form-row">
+          <label>
+            ID Number
+            <input type="text" id="stu-id" placeholder="e.g. 2517553" />
+          </label>
+          <label>
+            Section
+            <input type="text" id="stu-section" placeholder="e.g. IT 2 - Sec05" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            Course &amp; Year
+            <input type="text" id="stu-course" placeholder="e.g. BSIT / 2ND YEAR" />
+          </label>
+          <label>
+            Term / Assessment
+            <input type="text" id="stu-term" placeholder="e.g. 2026-2027 • 2nd Semester" />
+          </label>
+        </div>
+        <label>
+          School / Strand
+          <input type="text" id="stu-school" placeholder="e.g. Cebu Eastern College" />
+        </label>
+        <div class="modal-footer">
+          <button type="button" id="btn-cancel-student-modal" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Info</button>
         </div>
       </form>
     </div>
