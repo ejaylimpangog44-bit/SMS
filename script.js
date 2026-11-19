@@ -911,30 +911,136 @@ async function downloadSchedulePdf() {
     return;
   }
 
-  const targetSheet = !el("view-agenda").classList.contains("hidden")
+  const isAgenda = !el("view-agenda").classList.contains("hidden");
+  const sourceSheet = isAgenda
     ? document.querySelector("#view-agenda .template-sheet")
     : document.querySelector("#view-timetable .template-sheet");
 
   const { jsPDF } = window.jspdf || {};
-  if (!targetSheet || typeof html2canvas !== "function" || !jsPDF) {
+  if (!sourceSheet || typeof html2canvas !== "function" || !jsPDF) {
     setStatus("PDF library not loaded; opening print dialog instead.", "error");
     window.print();
     return;
   }
 
+  const prevMobileDay = appState.mobileDay;
+  const prevFilterDay = appState.filterDay;
+  let exportHost = null;
+
   try {
-    setStatus("Rendering visual schedule sheet to PDF...", "info");
-    const canvas = await html2canvas(targetSheet, {
+    setStatus("Rendering full Monday–Saturday schedule to PDF...", "info");
+
+    exportHost = document.createElement("div");
+    exportHost.style.position = "fixed";
+    exportHost.style.left = "-99999px";
+    exportHost.style.top = "0";
+    exportHost.style.width = "1120px";
+    exportHost.style.zIndex = "-1";
+    exportHost.style.pointerEvents = "none";
+
+    const clone = sourceSheet.cloneNode(true);
+    clone.style.width = "1080px";
+    clone.style.maxWidth = "none";
+
+    const cloneWrapper = clone.querySelector(".timetable-wrapper");
+    if (cloneWrapper) {
+      cloneWrapper.style.overflow = "visible";
+      cloneWrapper.style.width = "auto";
+    }
+
+    const cloneGrid = clone.querySelector(".timetable-grid");
+    if (cloneGrid) {
+      // Temporarily render all 6 days into cloneGrid for full PDF export
+      const tempGridId = "pdf-export-timetable-grid";
+      cloneGrid.id = tempGridId;
+
+      const origGrid = el("timetable-grid");
+      origGrid.id = "timetable-grid-temp-orig";
+      cloneGrid.id = "timetable-grid";
+
+      const origFilterDay = appState.filterDay;
+      appState.filterDay = "ALL";
+      const filteredAll = appState.subjects.filter((item) => {
+        return appState.filterType === "ALL" || item.type.toLowerCase() === appState.filterType.toLowerCase();
+      });
+
+      const pht = getPhtParts();
+      const totalHours = END_HOUR - START_HOUR;
+      const colHeight = totalHours * HOUR_HEIGHT;
+      cloneGrid.style.minWidth = "1010px";
+      cloneGrid.style.width = "1010px";
+      cloneGrid.style.gridTemplateColumns = "78px repeat(6, minmax(155px, 1fr))";
+
+      let gridHtml = `<div class="tt-corner">PHT +8</div>`;
+      DAYS_ORDER.forEach((day) => {
+        const isToday = pht.weekdayShort === day;
+        gridHtml += `<div class="tt-day-header ${isToday ? "today-col" : ""}">${DAY_NAMES[day]}</div>`;
+      });
+
+      gridHtml += `<div class="tt-time-col" style="height:${colHeight}px;">`;
+      for (let h = START_HOUR; h < END_HOUR; h++) {
+        const label = format12Hour(`${String(h).padStart(2, "0")}:00`).replace(":00 ", " ");
+        gridHtml += `<div class="tt-hour-label">${label}</div>`;
+      }
+      gridHtml += `</div>`;
+
+      DAYS_ORDER.forEach((day) => {
+        const isToday = pht.weekdayShort === day;
+        const dayClasses = filteredAll.filter((s) => s.days.includes(day));
+        gridHtml += `<div class="tt-day-col ${isToday ? "today-col" : ""}" style="height:${colHeight}px;">`;
+
+        dayClasses.forEach((item) => {
+          const startMins = Math.max(START_HOUR * 60, toMinutes(item.start));
+          const endMins = Math.min(END_HOUR * 60, toMinutes(item.end));
+          const top = ((startMins - START_HOUR * 60) / 60) * HOUR_HEIGHT;
+          const height = Math.max(28, ((endMins - startMins) / 60) * HOUR_HEIGHT - 2);
+          const color = getColorForSubject(item.code);
+          const edpLabel = item.edp && item.edp !== item.code ? ` · ${item.edp}` : "";
+
+          gridHtml += `
+            <div class="class-block"
+                 style="top:${top}px; height:${height}px; background:${color.bg}; border-left-color:${color.border}; color:${color.text};">
+              <div class="cb-top">
+                <span>${item.code}${edpLabel}</span>
+                <span class="cb-type-tag">${item.type}</span>
+              </div>
+              ${height >= 46 ? `<div class="cb-title">${item.title}</div>` : ""}
+              <div class="cb-bottom">
+                <span>${format12Hour(item.start)}–${format12Hour(item.end)}</span>
+                <span>${item.room || "TBA"}</span>
+              </div>
+            </div>
+          `;
+        });
+
+        gridHtml += `</div>`;
+      });
+
+      cloneGrid.innerHTML = gridHtml;
+      const mobileBar = clone.querySelector(".mobile-day-bar");
+      if (mobileBar) mobileBar.remove();
+
+      cloneGrid.id = "pdf-timetable-grid-done";
+      origGrid.id = "timetable-grid";
+      appState.filterDay = origFilterDay;
+    }
+
+    exportHost.appendChild(clone);
+    document.body.appendChild(exportHost);
+
+    const canvas = await html2canvas(clone, {
       scale: 2,
       useCORS: true,
-      backgroundColor: "#ffffff"
+      backgroundColor: "#ffffff",
+      width: clone.scrollWidth,
+      height: clone.scrollHeight
     });
 
     const imgData = canvas.toDataURL("image/png");
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
+    const margin = 18;
     const maxW = pageWidth - margin * 2;
     const maxH = pageHeight - margin * 2;
     const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
@@ -945,9 +1051,15 @@ async function downloadSchedulePdf() {
 
     doc.addImage(imgData, "PNG", x, y, drawW, drawH);
     doc.save("COR_Schedule_PHT8.pdf");
-    setStatus("Downloaded visual COR_Schedule_PHT8.pdf automatically.", "success");
+    setStatus("Downloaded full Monday–Saturday COR_Schedule_PHT8.pdf.", "success");
   } catch (err) {
     setStatus(`PDF export failed: ${err.message || "Unable to render PDF."}`, "error");
+  } finally {
+    appState.mobileDay = prevMobileDay;
+    appState.filterDay = prevFilterDay;
+    if (exportHost && exportHost.parentNode) {
+      exportHost.parentNode.removeChild(exportHost);
+    }
   }
 }
 
