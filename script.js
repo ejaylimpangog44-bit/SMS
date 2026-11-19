@@ -806,6 +806,62 @@ function exportIcsFile() {
   link.click();
 }
 
+function downloadSchedulePdf() {
+  if (!appState.subjects.length) {
+    setStatus("Add or scan at least one class before downloading a PDF.", "error");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) {
+    window.print();
+    return;
+  }
+
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  const s = appState.student;
+
+  doc.setFontSize(16);
+  doc.text("Schedule Management System — Class Schedule (PHT UTC+8)", 40, 38);
+
+  doc.setFontSize(10);
+  doc.text(
+    `Student: ${s.name || "—"} | ID: ${s.idNumber || "—"} | Course/Year: ${s.courseYear || "—"} | Section: ${s.section || "—"}`,
+    40,
+    56
+  );
+
+  const rows = appState.subjects.map((item) => [
+    item.edp || "—",
+    item.code || "—",
+    item.title || "—",
+    (item.days || []).join(", "),
+    `${format12Hour(item.start)} – ${format12Hour(item.end)}`,
+    item.room || "TBA",
+    item.type || "Lec",
+    String(item.units ?? 0)
+  ]);
+
+  if (typeof doc.autoTable === "function") {
+    doc.autoTable({
+      startY: 70,
+      head: [["EDP Code", "Subject", "Descriptive Title", "Days", "Time (PHT +8)", "Room", "Type", "Units"]],
+      body: rows,
+      styles: { fontSize: 8.5, cellPadding: 5 },
+      headStyles: { fillColor: [18, 24, 38] }
+    });
+  } else {
+    let y = 80;
+    rows.forEach((r) => {
+      doc.text(r.join(" | "), 40, y);
+      y += 16;
+    });
+  }
+
+  doc.save("COR_Schedule_PHT8.pdf");
+  setStatus("Downloaded COR_Schedule_PHT8.pdf automatically.", "success");
+}
+
 function saveToLocalStorage() {
   try {
     localStorage.setItem(
@@ -962,6 +1018,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   el("btn-export-ics").addEventListener("click", exportIcsFile);
+  el("btn-download-pdf").addEventListener("click", downloadSchedulePdf);
   el("btn-print").addEventListener("click", () => window.print());
 
   renderAll();
