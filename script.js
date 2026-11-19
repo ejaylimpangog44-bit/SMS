@@ -39,11 +39,6 @@ let appState = {
     term: "—"
   },
   subjects: [],
-  ocrDebug: {
-    rawText: "",
-    lineLogs: [],
-    parsedMeta: {}
-  },
   uploadedDataUrl: null,
   filterDay: "ALL",
   filterType: "ALL"
@@ -285,7 +280,6 @@ async function togglePhoneAlerts() {
     } else if (typeof Notification !== "undefined" && Notification.permission === "granted") {
       alertsEnabled = true;
     } else {
-      // Still allow offline in-app banner + sound + vibration even if OS blocks browser notifications
       alertsEnabled = true;
     }
     el("btn-toggle-alerts").textContent = "Alerts: ON (Offline)";
@@ -374,28 +368,6 @@ function detectConflicts(subjects) {
   return warnings;
 }
 
-function renderOcrInspector() {
-  const { rawText, lineLogs, parsedMeta } = appState.ocrDebug;
-  el("ocr-raw-text").textContent = rawText || "(Empty — no COR image scanned yet)";
-
-  const metaEntries = Object.entries(parsedMeta || {});
-  if (!metaEntries.length) {
-    el("ocr-parsed-meta").innerHTML = "No OCR header metadata extracted yet.";
-  } else {
-    el("ocr-parsed-meta").innerHTML = metaEntries
-      .map(([k, v]) => `<div><strong>${k}:</strong> <span class="mono-text">${v || "—"}</span></div>`)
-      .join("");
-  }
-
-  if (!lineLogs || !lineLogs.length) {
-    el("ocr-line-log").innerHTML = `<div class="ocr-line-skip">No lines parsed yet.</div>`;
-  } else {
-    el("ocr-line-log").innerHTML = lineLogs
-      .map((entry) => `<div class="${entry.matched ? "ocr-line-ok" : "ocr-line-skip"}">${entry.text}</div>`)
-      .join("");
-  }
-}
-
 function renderAll() {
   const s = appState.student;
   el("info-name").textContent = s.name || "—";
@@ -446,7 +418,6 @@ function renderAll() {
   renderTimetable(filtered);
   renderAgenda(filtered);
   renderTable(filtered);
-  renderOcrInspector();
   updateClockAndTracker();
   saveToLocalStorage();
 }
@@ -622,79 +593,54 @@ function parseCorText(rawText) {
     term: "—"
   };
 
-  const parsedMeta = {};
   const subjects = [];
-  const lineLogs = [];
 
   for (const line of lines) {
     const idMatch = line.match(/(?:ID\s*(?:NUMBER|NO\.?|#)?\s*[:\-]?\s*)(\d{5,12})/i);
     if (idMatch && student.idNumber === "—") {
       student.idNumber = idMatch[1];
-      parsedMeta["ID Number"] = idMatch[1];
     }
 
     const nameMatch = line.match(/(?:STUDENT\s*NAME|NAME)\s*[:\-]\s*([A-Z][A-Z\s,.'-]{2,60})/i);
     if (nameMatch && student.name === "—") {
       student.name = nameMatch[1].trim();
-      parsedMeta["Student Name"] = student.name;
     }
 
     const courseMatch = line.match(/(?:COURSE(?:\s*\/\s*YEAR)?|PROGRAM)\s*[:\-]\s*([A-Z0-9\s\/-]{2,45})/i);
     if (courseMatch && student.courseYear === "—") {
       student.courseYear = courseMatch[1].trim();
-      parsedMeta["Course / Year"] = student.courseYear;
     }
 
     const secMatch = line.match(/(?:SECTION|SEC)\s*[:\-]\s*([A-Z0-9\s-]{2,25})/i);
     if (secMatch && student.section === "—") {
       student.section = secMatch[1].trim();
-      parsedMeta["Section"] = student.section;
     }
 
     const termMatch = line.match(/((?:20\d{2}\s*[-–]\s*20\d{2})|(?:1ST|2ND|MIDYEAR|SUMMER)\s*SEMESTER)/i);
     if (termMatch) {
       student.term = student.term === "—" ? termMatch[1].trim() : `${student.term} • ${termMatch[1].trim()}`;
-      parsedMeta["Academic Term"] = student.term;
-    }
-
-    const assessMatch = line.match(/(?:ASSESSMENT(?:\s*AMOUNT)?|TOTAL\s*AMOUNT)\s*[:\-]?\s*(?:PHP|P)?\s*([\d,]+\.\d{2})/i);
-    if (assessMatch) {
-      parsedMeta["Assessment Amount"] = `Php ${assessMatch[1]}`;
     }
 
     if (student.school === "—" && /(COLLEGE|UNIVERSITY|INSTITUTE|SCHOOL|ACADEMY)/i.test(line) && !/CERTIFICATE OF REGISTRATION/i.test(line)) {
       student.school = line.slice(0, 60);
-      parsedMeta["School"] = student.school;
     }
 
     const timeRangeRegex = /(\d{1,2}[:.]\d{2})\s*(AM|PM)?\s*(?:[-–—~]|TO)\s*(\d{1,2}[:.]\d{2})\s*(AM|PM)?/i;
     const tMatch = line.match(timeRangeRegex);
-
-    if (!tMatch) {
-      lineLogs.push({ matched: false, text: `[SKIP] ${line}` });
-      continue;
-    }
+    if (!tMatch) continue;
 
     const endPeriod = tMatch[4] ? tMatch[4].toUpperCase() : null;
     const startPeriod = tMatch[2] ? tMatch[2].toUpperCase() : endPeriod;
     const start24 = parse12HourTo24(tMatch[1], startPeriod);
     const end24 = parse12HourTo24(tMatch[3], endPeriod);
-
-    if (!start24 || !end24) {
-      lineLogs.push({ matched: false, text: `[TIME ERR] ${line}` });
-      continue;
-    }
+    if (!start24 || !end24) continue;
 
     const beforeTime = line.slice(0, tMatch.index).trim();
     const afterTime = line.slice(tMatch.index + tMatch[0].length).trim();
 
     const dayMatch = beforeTime.match(/\b(MWF|TTHS|TTH|MW|WF|MF|THS|MTWTHF|MTWTHFS|MON|TUE|WED|THU|FRI|SAT|MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY)\b/i);
     const days = dayMatch ? expandDayToken(dayMatch[1]) : [];
-
-    if (!days.length) {
-      lineLogs.push({ matched: false, text: `[NO DAY] ${line}` });
-      continue;
-    }
+    if (!days.length) continue;
 
     const edpMatch = beforeTime.match(/\b(\d{5,9})\b/);
     const edp = edpMatch ? edpMatch[1] : "";
@@ -734,14 +680,9 @@ function parseCorText(rawText) {
       type,
       units
     });
-
-    lineLogs.push({
-      matched: true,
-      text: `[OK] EDP:${edp || "—"} | ${code} | ${days.join("/")} | ${start24}-${end24} | Rm:${room} | ${type} | ${units}u`
-    });
   }
 
-  return { student, subjects, parsedMeta, lineLogs };
+  return { student, subjects };
 }
 
 function setStatus(message, type = "info") {
@@ -763,7 +704,7 @@ function handleFileSelect(file) {
     el("drop-zone-empty").classList.add("hidden");
     el("preview-wrapper").classList.remove("hidden");
     el("btn-scan-cor").disabled = false;
-    setStatus("COR photo loaded. Click 'Scan COR & Build Schedule' to run OCR.", "info");
+    setStatus("COR photo loaded. Click 'Scan & Build Schedule' to run OCR.", "info");
   };
   reader.readAsDataURL(file);
 }
@@ -781,7 +722,7 @@ async function runCorOcr() {
   progFill.style.width = "5%";
   progPct.textContent = "5%";
   progStage.textContent = "Starting Tesseract OCR...";
-  setStatus("Scanning COR image locally in your browser (PHT +8)...", "info");
+  setStatus("Scanning schedule image locally in your browser (PHT +8)...", "info");
 
   try {
     const worker = await Tesseract.createWorker("eng", 1, {
@@ -801,12 +742,6 @@ async function runCorOcr() {
     const rawText = data?.text || "";
     const parsed = parseCorText(rawText);
 
-    appState.ocrDebug = {
-      rawText,
-      lineLogs: parsed.lineLogs,
-      parsedMeta: parsed.parsedMeta
-    };
-
     appState.student = {
       name: parsed.student.name !== "—" ? parsed.student.name : appState.student.name,
       idNumber: parsed.student.idNumber !== "—" ? parsed.student.idNumber : appState.student.idNumber,
@@ -818,16 +753,14 @@ async function runCorOcr() {
 
     if (parsed.subjects.length) {
       appState.subjects = parsed.subjects;
-      el("ocr-inspector-panel").classList.remove("hidden");
       renderAll();
-      setStatus(`OCR complete: extracted ${parsed.subjects.length} class(es) with EDP codes in PHT +8.`, "success");
+      setStatus(`Scan complete: extracted ${parsed.subjects.length} class(es) with EDP codes in PHT +8.`, "success");
     } else {
-      el("ocr-inspector-panel").classList.remove("hidden");
       renderAll();
-      setStatus("OCR read the text, but no schedule rows matched automatically. Check OCR Inspector or click + Add Class.", "error");
+      setStatus("Scan finished, but no schedule rows matched automatically. Click + Add Class to add them manually.", "error");
     }
   } catch (err) {
-    setStatus(`OCR failed: ${err.message || "Unable to process image."}`, "error");
+    setStatus(`Scan failed: ${err.message || "Unable to process image."}`, "error");
   } finally {
     scanBtn.disabled = false;
     progWrap.classList.add("hidden");
@@ -877,56 +810,6 @@ function openStudentModal() {
 
 function closeStudentModal() {
   el("student-modal").classList.add("hidden");
-}
-
-function exportIcsFile() {
-  if (!appState.subjects.length) {
-    setStatus("Add or scan at least one class before exporting an .ICS file.", "error");
-    return;
-  }
-
-  const rruleDayMap = { MON: "MO", TUE: "TU", WED: "WE", THU: "TH", FRI: "FR", SAT: "SA" };
-  const dateSeedMap = {
-    MON: "20261123",
-    TUE: "20261124",
-    WED: "20261125",
-    THU: "20261126",
-    FRI: "20261127",
-    SAT: "20261128"
-  };
-
-  const lines = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Schedule Management System//COR Smart Scanner PHT+8//EN",
-    "CALSCALE:GREGORIAN"
-  ];
-
-  appState.subjects.forEach((item, idx) => {
-    if (!item.days.length) return;
-    const firstDay = item.days[0];
-    const startCompact = item.start.replace(":", "") + "00";
-    const endCompact = item.end.replace(":", "") + "00";
-    const byDay = item.days.map((d) => rruleDayMap[d]).join(",");
-
-    lines.push(
-      "BEGIN:VEVENT",
-      `UID:cor-${idx}-${Date.now()}@pht-schedule`,
-      `SUMMARY:${item.code}${item.edp ? ` [${item.edp}]` : ""} (${item.type}) - ${item.title}`,
-      `LOCATION:${item.room || "TBA"}`,
-      `DTSTART;TZID=Asia/Manila:${dateSeedMap[firstDay]}T${startCompact}`,
-      `DTEND;TZID=Asia/Manila:${dateSeedMap[firstDay]}T${endCompact}`,
-      `RRULE:FREQ=WEEKLY;BYDAY=${byDay}`,
-      "END:VEVENT"
-    );
-  });
-
-  lines.push("END:VCALENDAR");
-  const blob = new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "COR_Schedule_PHT8.ics";
-  link.click();
 }
 
 async function downloadSchedulePdf() {
@@ -982,8 +865,7 @@ function saveToLocalStorage() {
       JSON.stringify({
         template: appState.template,
         student: appState.student,
-        subjects: appState.subjects,
-        ocrDebug: appState.ocrDebug
+        subjects: appState.subjects
       })
     );
   } catch (_) {}
@@ -996,7 +878,6 @@ function loadFromLocalStorage() {
       if (saved.template) appState.template = saved.template;
       if (saved.student) appState.student = { ...appState.student, ...saved.student };
       if (Array.isArray(saved.subjects)) appState.subjects = saved.subjects;
-      if (saved.ocrDebug) appState.ocrDebug = { ...appState.ocrDebug, ...saved.ocrDebug };
     }
   } catch (_) {}
 }
@@ -1011,10 +892,9 @@ function clearAllData() {
     term: "—"
   };
   appState.subjects = [];
-  appState.ocrDebug = { rawText: "", lineLogs: [], parsedMeta: {} };
   localStorage.removeItem(STORAGE_KEY);
   renderAll();
-  setStatus("Schedule data cleared. Ready for a new COR upload.", "info");
+  setStatus("Schedule data cleared. Ready for a new upload.", "info");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1059,22 +939,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.querySelectorAll(".template-option").forEach((btn) => {
     btn.addEventListener("click", () => applyTemplate(btn.dataset.template));
-  });
-
-  el("btn-toggle-ocr-inspector").addEventListener("click", () => {
-    el("ocr-inspector-panel").classList.toggle("hidden");
-    renderOcrInspector();
-  });
-
-  el("btn-close-ocr-inspector").addEventListener("click", () => {
-    el("ocr-inspector-panel").classList.add("hidden");
-  });
-
-  el("btn-copy-raw-ocr").addEventListener("click", () => {
-    const text = appState.ocrDebug.rawText || "";
-    if (!text) return;
-    navigator.clipboard?.writeText(text);
-    setStatus("Copied full raw OCR text to clipboard.", "success");
   });
 
   document.querySelectorAll(".tab-btn").forEach((btn) => {
