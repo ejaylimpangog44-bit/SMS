@@ -161,6 +161,15 @@
           <h2>3. Live Class Tracker</h2>
           <span id="current-day-pill" class="badge badge-neutral">PHT</span>
         </div>
+        <div style="display:flex; gap:0.4rem; margin-bottom:0.6rem; flex-wrap:wrap;">
+          <button type="button" id="btn-toggle-alerts" class="btn btn-xs btn-secondary">
+            Enable Phone Alerts
+          </button>
+          <button type="button" id="btn-test-alert" class="btn btn-xs btn-ghost">
+            Test Alert
+          </button>
+        </div>
+        <div id="class-alert-banner" class="scan-status hidden" role="alert" style="margin-bottom:0.6rem;"></div>
         <div id="live-status-box" class="live-status-box">
           <p class="muted-label">Checking PHT +8 class status...</p>
         </div>
