@@ -172,6 +172,13 @@ function expandDayToken(token) {
   return [...new Set(days)];
 }
 
+function normalizeOcrDays(text) {
+  return String(text || "")
+    .toUpperCase()
+    .replace(/\b(?:7TH|T7H|TIH)\b/g, "TTH")
+    .replace(/\bMW[FI]\b/g, "MWF");
+}
+
 function getColorForSubject(code) {
   const baseCode = String(code || "SUBJ").replace(/\s*LAB$/i, "").trim();
   let hash = 0;
@@ -632,8 +639,14 @@ function parseCorText(rawText) {
   };
 
   const subjects = [];
+  const timeRangeRegex = /(\d{1,2}[:.;]\d{2})\s*(AM|PM)?\s*(?:[-–—~]|TO)\s*(\d{1,2}[:.;]\d{2})\s*(AM|PM)?/i;
+  const dayRegex = /\b(MWF|TTHS|TTH|MW|WF|MF|THS|MTWTHF|MTWTHFS|MON|TUE|WED|THU|FRI|SAT|MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY)\b/i;
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const prevLine = i > 0 ? lines[i - 1] : "";
+    const nextLine = i < lines.length - 1 ? lines[i + 1] : "";
+
     const idMatch = line.match(/(?:ID\s*(?:NUMBER|NO\.?|#)?\s*[:\-]?\s*)(\d{5,12})/i);
     if (idMatch && student.idNumber === "—") {
       student.idNumber = idMatch[1];
@@ -659,43 +672,63 @@ function parseCorText(rawText) {
       student.term = student.term === "—" ? termMatch[1].trim() : `${student.term} • ${termMatch[1].trim()}`;
     }
 
-    if (student.school === "—" && /(COLLEGE|UNIVERSITY|INSTITUTE|SCHOOL|ACADEMY)/i.test(line) && !/CERTIFICATE OF REGISTRATION/i.test(line)) {
+    if (
+      student.school === "—" &&
+      /(COLLEGE|UNIVERSITY|INSTITUTE|SCHOOL|ACADEMY)/i.test(line) &&
+      !/CERTIFICATE OF REGISTRATION/i.test(line)
+    ) {
       student.school = line.slice(0, 60);
     }
 
-    const timeRangeRegex = /(\d{1,2}[:.]\d{2})\s*(AM|PM)?\s*(?:[-–—~]|TO)\s*(\d{1,2}[:.]\d{2})\s*(AM|PM)?/i;
-    const tMatch = line.match(timeRangeRegex);
+    const normalizedLine = line.replace(/(\d{1,2});(\d{2})/g, "$1:$2");
+    const tMatch = normalizedLine.match(timeRangeRegex);
     if (!tMatch) continue;
 
+    const cleanStartTime = tMatch[1].replace(".", ":");
+    const cleanEndTime = tMatch[3].replace(".", ":");
     const endPeriod = tMatch[4] ? tMatch[4].toUpperCase() : null;
     const startPeriod = tMatch[2] ? tMatch[2].toUpperCase() : endPeriod;
-    const start24 = parse12HourTo24(tMatch[1], startPeriod);
-    const end24 = parse12HourTo24(tMatch[3], endPeriod);
+    const start24 = parse12HourTo24(cleanStartTime, startPeriod);
+    const end24 = parse12HourTo24(cleanEndTime, endPeriod);
     if (!start24 || !end24) continue;
 
-    const beforeTime = line.slice(0, tMatch.index).trim();
-    const afterTime = line.slice(tMatch.index + tMatch[0].length).trim();
+    const beforeTime = normalizedLine.slice(0, tMatch.index).trim();
+    const afterTime = normalizedLine.slice(tMatch.index + tMatch[0].length).trim();
+    const contextBlob = normalizeOcrDays(`${prevLine} ${beforeTime} ${afterTime} ${nextLine}`);
 
-    const dayMatch = beforeTime.match(/\b(MWF|TTHS|TTH|MW|WF|MF|THS|MTWTHF|MTWTHFS|MON|TUE|WED|THU|FRI|SAT|MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY)\b/i);
+    const dayMatch =
+      normalizeOcrDays(beforeTime).match(dayRegex) ||
+      normalizeOcrDays(afterTime).match(dayRegex) ||
+      contextBlob.match(dayRegex);
+
     const days = dayMatch ? expandDayToken(dayMatch[1]) : [];
     if (!days.length) continue;
 
-    const edpMatch = beforeTime.match(/\b(\d{5,9})\b/);
+    const searchText = `${beforeTime} ${prevLine}`;
+    const edpMatch = searchText.match(/\b(\d{5,9})\b/);
     const edp = edpMatch ? edpMatch[1] : "";
 
-    const codeMatch = beforeTime.match(/\b([A-Z]{2,8}\s*\d{1,4}[A-Z0-9]*(?:\s+LAB)?|GE\s*\d+|PATHFIT\s*\d+|NSTP\s*\d+|SSPD)\b/i);
+    const codeMatch = searchText.match(/\b([A-Z]{2,8}\s*\d{1,4}[A-Z0-9]*(?:\s+LAB)?|GE\s*\d+|PATHFIT\s*\d+|NSTP\s*\d+|SSPD)\b/i);
     const code = codeMatch ? codeMatch[1].toUpperCase().replace(/\s+/g, " ").trim() : "CLASS";
 
     let title = beforeTime;
     if (edp) title = title.replace(edp, " ");
     if (codeMatch) title = title.replace(codeMatch[0], " ");
-    if (dayMatch) title = title.replace(dayMatch[0], " ");
+    if (dayMatch) title = title.replace(new RegExp(`\\b${dayMatch[1]}\\b`, "i"), " ");
     title = title
       .replace(/[^A-Z0-9\s&()\-/.,]/gi, " ")
       .replace(/\b[A-Z]{1,2}\b(?=\s+[A-Z]{1,2}\b)/g, " ")
       .replace(/^[\s\-:|./,]+|[\s\-:|./,]+$/g, "")
       .replace(/\s{2,}/g, " ")
       .trim();
+
+    if (!title && prevLine && !timeRangeRegex.test(prevLine)) {
+      title = prevLine
+        .replace(edp || "", " ")
+        .replace(codeMatch ? codeMatch[0] : "", " ")
+        .replace(/[^A-Z0-9\s&()\-/.,]/gi, " ")
+        .trim();
+    }
     if (!title) title = code;
 
     const afterTokens = afterTime.split(/\s+/).filter(Boolean);
@@ -705,11 +738,17 @@ function parseCorText(rawText) {
     }
 
     let type = "Lec";
-    if (/\bLAB(?:ORATORY)?\b/i.test(code) || /\bLAB(?:ORATORY)?\b/i.test(title) || /\bLAB\b/i.test(afterTime)) {
+    if (
+      /\bLAB(?:ORATORY)?\b/i.test(code) ||
+      /\bLAB(?:ORATORY)?\b/i.test(title) ||
+      /\bLAB\b/i.test(afterTime)
+    ) {
       type = "Lab";
     }
 
-    const roomTokens = afterTokens.filter((tok) => !/^(LEC|LAB|LECTURE|LABORATORY)$/i.test(tok));
+    const roomTokens = afterTokens.filter(
+      (tok) => !/^(LEC|LAB|LECTURE|LABORATORY|MON|TUE|WED|THU|FRI|SAT|MWF|TTH|TTHS)$/i.test(tok)
+    );
     const room = roomTokens.join(" ").trim() || "TBA";
 
     subjects.push({
@@ -783,6 +822,8 @@ async function runCorOcr() {
     await worker.terminate();
 
     const rawText = data?.text || "";
+    console.log("RAW COR OCR TEXT:\n", rawText);
+
     const parsed = parseCorText(rawText);
 
     appState.student = {
